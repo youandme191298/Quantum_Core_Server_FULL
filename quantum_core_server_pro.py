@@ -1,6 +1,6 @@
 # ======================================================
-# Quantum Core Server Pro — Production Safe (Threading)
-# Compatible with Render + Python 3.13
+# Quantum Core Server Pro — Render Production Edition
+# Flask + SocketIO (threading mode)
 # ======================================================
 
 from flask import Flask, jsonify, render_template_string, request
@@ -19,6 +19,7 @@ total_energy = {
 
 RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://quantum-core-server-full.onrender.com")
 KEEPALIVE_URL = f"{RENDER_URL.rstrip('/')}/total_energy"
+
 print(f"[INIT] KeepAlive target set to: {KEEPALIVE_URL}")
 
 def keep_alive():
@@ -100,14 +101,10 @@ def on_connect():
     print("[SocketIO] Client connected")
     socketio.emit("sync_update", total_energy)
 
-# ======================================================
-# Entry point cho Gunicorn (production-safe)
-# ======================================================
 def create_app():
+    """Return Flask app for Gunicorn"""
     return app
 
-# Khi chạy trực tiếp (local test)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    print(f"\n🚀 Quantum Core Server Pro (Threading) khởi động trên cổng {port}")
     socketio.run(app, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
