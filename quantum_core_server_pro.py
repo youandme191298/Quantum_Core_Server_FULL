@@ -1,15 +1,15 @@
 # ======================================================
-# Quantum Core Server Pro — FINAL PRODUCTION (Render WSGI)
-# Flask + SocketIO (gevent) + KeepAlive + Auto URL + PORT
+# Quantum Core Server Pro — FINAL PRODUCTION (Eventlet)
+# Flask + SocketIO (eventlet) + KeepAlive + Auto URL + PORT
 # ======================================================
 
 from flask import Flask, jsonify, render_template_string, request
 from flask_socketio import SocketIO
 import threading, time, datetime, os, requests
 
-# === Flask + SocketIO (gevent for production) ===
+# === Flask + SocketIO (Eventlet for production) ===
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
 # === Energy State ===
 total_energy = {
@@ -106,7 +106,7 @@ def handle_connect():
     print("[SocketIO] Client connected")
     socketio.emit("sync_update", total_energy)
 
-# === Run (for Render Production via Gunicorn) ===
+# === Run (for Render Production via Gunicorn + Eventlet) ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     print(f"\n🚀 Quantum Core Server Pro khởi động trên cổng {port}")
