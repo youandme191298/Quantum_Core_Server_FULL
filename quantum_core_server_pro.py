@@ -1,16 +1,16 @@
 # ======================================================
-# Quantum Core Server Pro — FINAL FIX FOR RENDER
-# Force Eventlet async mode (Flask-SocketIO)
+# Quantum Core Server Pro — FINAL RENDER PATCH
+# Fix Python 3.13 distutils removal + Eventlet stable
 # ======================================================
 
 import eventlet
-eventlet.monkey_patch()  # <— ép Render load eventlet trước Flask
+eventlet.monkey_patch()
 
 from flask import Flask, jsonify, render_template_string, request
 from flask_socketio import SocketIO
 import threading, time, datetime, os, requests
 
-# === Flask + SocketIO (Eventlet for production) ===
+# === Flask + SocketIO (Eventlet stable) ===
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
@@ -37,7 +37,7 @@ def keep_alive():
                 print(f"[KeepAlive ⚠️] Ping returned {r.status_code}")
         except Exception as e:
             print(f"[KeepAlive ❌] Error: {e}")
-        time.sleep(600)  # every 10 minutes
+        time.sleep(600)
 
 threading.Thread(target=keep_alive, daemon=True).start()
 
@@ -70,7 +70,6 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# === Routes ===
 @app.route("/")
 def index():
     return jsonify({"status": "ok", "message": "Quantum Core Server đang hoạt động"})
@@ -103,13 +102,11 @@ def sync_dashboards():
 def test():
     return jsonify({"status":"running","time":str(datetime.datetime.now())})
 
-# === SocketIO ===
 @socketio.on("connect")
 def handle_connect():
     print("[SocketIO] Client connected")
     socketio.emit("sync_update", total_energy)
 
-# === Run (for Render Production via Gunicorn + Eventlet) ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     print(f"\n🚀 Quantum Core Server Pro khởi động trên cổng {port}")
