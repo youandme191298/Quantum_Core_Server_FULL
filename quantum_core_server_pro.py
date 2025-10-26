@@ -1,13 +1,12 @@
 # ======================================================
-# Quantum Core Server Pro — THREADSAFE Edition (No C compile)
-# Fully compatible with Python 3.13 on Render
+# Quantum Core Server Pro — Production Safe (Threading)
+# Compatible with Render + Python 3.13
 # ======================================================
 
 from flask import Flask, jsonify, render_template_string, request
 from flask_socketio import SocketIO
 import threading, time, datetime, os, requests
 
-# === Flask + SocketIO (Thread mode for 3.13) ===
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
@@ -101,7 +100,14 @@ def on_connect():
     print("[SocketIO] Client connected")
     socketio.emit("sync_update", total_energy)
 
+# ======================================================
+# Entry point cho Gunicorn (production-safe)
+# ======================================================
+def create_app():
+    return app
+
+# Khi chạy trực tiếp (local test)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     print(f"\n🚀 Quantum Core Server Pro (Threading) khởi động trên cổng {port}")
-    socketio.run(app, host="0.0.0.0", port=port)
+    socketio.run(app, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)

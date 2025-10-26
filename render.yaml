@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
-    startCommand: "gunicorn -w 1 -b 0.0.0.0:$PORT quantum_core_server_pro:app"
+    startCommand: "gunicorn -w 1 -b 0.0.0.0:$PORT quantum_core_server_pro:create_app()"
     envVars:
       - key: PORT
         value: 10000
