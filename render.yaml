@@ -3,17 +3,9 @@ services:
     name: Quantum_Core_Server_FULL
     env: python
     plan: free
-    buildCommand: |
-      echo "==== Force Python 3.11.9 ===="
-      pyenv install -s 3.11.9
-      pyenv global 3.11.9
-      python --version
-      pip install --upgrade pip
-      pip install -r requirements.txt
-    startCommand: "gunicorn -k eventlet -w 1 -b 0.0.0.0:$PORT quantum_core_server_pro:app"
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
+    startCommand: "gunicorn -k gevent -w 1 -b 0.0.0.0:$PORT quantum_core_server_pro:app"
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
       - key: PORT
         value: 10000
     healthCheckPath: /total_energy
