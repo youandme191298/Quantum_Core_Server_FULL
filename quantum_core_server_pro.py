@@ -1,25 +1,23 @@
 # ======================================================
-# Quantum Core Server Pro — Gevent Stable Edition (Render Oct 2025)
-# Compatible with Python 3.13 (no _wrap_socket / no distutils issues)
+# Quantum Core Server Pro — THREADSAFE Edition (No C compile)
+# Fully compatible with Python 3.13 on Render
 # ======================================================
 
 from flask import Flask, jsonify, render_template_string, request
 from flask_socketio import SocketIO
 import threading, time, datetime, os, requests
 
-# === Flask + SocketIO (GEVENT MODE) ===
+# === Flask + SocketIO (Thread mode for 3.13) ===
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-# === Core Energy State ===
 total_energy = {
-    "heaven": 3210,
-    "earth": 2875,
-    "human": 3088,
+    "heaven": 3200,
+    "earth": 2895,
+    "human": 3010,
     "last_update": str(datetime.datetime.now())
 }
 
-# === KeepAlive setup ===
 RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://quantum-core-server-full.onrender.com")
 KEEPALIVE_URL = f"{RENDER_URL.rstrip('/')}/total_energy"
 print(f"[INIT] KeepAlive target set to: {KEEPALIVE_URL}")
@@ -38,7 +36,6 @@ def keep_alive():
 
 threading.Thread(target=keep_alive, daemon=True).start()
 
-# === HTML Dashboard ===
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
@@ -106,5 +103,5 @@ def on_connect():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    print(f"\n🚀 Quantum Core Server Pro (Gevent) khởi động trên cổng {port}")
+    print(f"\n🚀 Quantum Core Server Pro (Threading) khởi động trên cổng {port}")
     socketio.run(app, host="0.0.0.0", port=port)
