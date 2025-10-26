@@ -2,17 +2,10 @@ services:
   - type: web
     name: Quantum_Core_Server_FULL
     env: python
-    region: singapore
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python quantum_core_server_pro.py"
-    autoDeploy: true
     plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 0.0.0.0:$PORT quantum_core_server_pro:app"
     envVars:
       - key: PORT
         value: 10000
     healthCheckPath: /total_energy
-    numInstances: 1
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1

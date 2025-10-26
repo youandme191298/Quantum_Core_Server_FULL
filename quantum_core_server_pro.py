@@ -1,17 +1,17 @@
 # ======================================================
-# Quantum Core Server Pro — FINAL RENDER EDITION
-# Stable 24/24 KeepAlive + Auto URL + Port + Dashboard
+# Quantum Core Server Pro — FINAL PRODUCTION (Render WSGI)
+# Flask + SocketIO (gevent) + KeepAlive + Auto URL + PORT
 # ======================================================
 
 from flask import Flask, jsonify, render_template_string, request
 from flask_socketio import SocketIO
 import threading, time, datetime, os, requests
 
-# === Flask + SocketIO ===
+# === Flask + SocketIO (gevent for production) ===
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
 
-# === Energy Core State ===
+# === Energy State ===
 total_energy = {
     "heaven": 3210,
     "earth": 2875,
@@ -34,11 +34,11 @@ def keep_alive():
                 print(f"[KeepAlive ⚠️] Ping returned {r.status_code}")
         except Exception as e:
             print(f"[KeepAlive ❌] Error: {e}")
-        time.sleep(600)  # 10 phút
+        time.sleep(600)  # every 10 minutes
 
 threading.Thread(target=keep_alive, daemon=True).start()
 
-# === HTML Template (simple but elegant) ===
+# === HTML Template ===
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
@@ -70,7 +70,7 @@ HTML_TEMPLATE = """
 # === Routes ===
 @app.route("/")
 def index():
-    return jsonify({"status": "ok", "message": "Quantum Core Server hoạt động ổn định"})
+    return jsonify({"status": "ok", "message": "Quantum Core Server đang hoạt động"})
 
 @app.route("/total_energy", methods=["GET"])
 def dashboard():
@@ -106,10 +106,10 @@ def handle_connect():
     print("[SocketIO] Client connected")
     socketio.emit("sync_update", total_energy)
 
-# === Auto Port Binding ===
+# === Run (for Render Production via Gunicorn) ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     print(f"\n🚀 Quantum Core Server Pro khởi động trên cổng {port}")
     print("🌐 Render external URL:", RENDER_URL)
     print("🔁 KeepAlive URL:", KEEPALIVE_URL)
-    socketio.run(app, host="0.0.0.0", port=port, debug=False, allow_unsafe_werkzeug=True)
+    socketio.run(app, host="0.0.0.0", port=port)
