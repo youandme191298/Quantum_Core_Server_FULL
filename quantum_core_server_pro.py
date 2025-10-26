@@ -1,142 +1,108 @@
-# ==========================================================
-# Quantum Core Server Pro (Render Edition)
-# ----------------------------------------------------------
-# Phiên bản: 3.0.2 - Có tích hợp KeepAlive 24/24
-# ----------------------------------------------------------
-# Mục đích:
-# - Quản lý, điều phối và giám sát năng lượng lượng tử đa tầng
-# - Hỗ trợ Flask REST API + SocketIO real-time
-# - Tự động duy trì hoạt động server Render không bao giờ “ngủ”
-# ==========================================================
+# quantum_core_server_pro.py
+# Quantum Core Server FULL – Auto Dashboard + JSON API + KeepAlive 24/24
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template_string, request
 from flask_socketio import SocketIO
-import importlib
-import os
-import time
-import random
-import threading
-import traceback
+import threading, time, requests, datetime, os
 
-# ----------------------------------------------------------
-# 1. Khởi tạo Flask + SocketIO
-# ----------------------------------------------------------
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-print("✅ Flask + SocketIO đã khởi tạo (async_mode = threading).")
+# ==========================
+# 🔹 KEEPALIVE: Ngăn Render ngủ
+# ==========================
+KEEPALIVE_URL = "https://quantum-core-server-full.onrender.com/total_energy"
 
-# ----------------------------------------------------------
-# 2. Tải động các tầng năng lượng trong thư mục core/
-# ----------------------------------------------------------
-CORE_FOLDER = "core"
+def keep_alive_loop():
+    while True:
+        try:
+            r = requests.get(KEEPALIVE_URL, timeout=10)
+            print(f"[KeepAlive ✅] Ping Render {r.status_code} at {datetime.datetime.now()}")
+        except Exception as e:
+            print(f"[KeepAlive ⚠️] Error: {e}")
+        time.sleep(600)  # 10 phút
 
-def load_core_layers():
-    layers = []
-    try:
-        for file in sorted(os.listdir(CORE_FOLDER)):
-            if file.endswith(".py") and file not in ["__init__.py", "__core_loader__.py"]:
-                module_name = f"{CORE_FOLDER}.{file[:-3]}"
-                try:
-                    importlib.import_module(module_name)
-                    layers.append(file)
-                except Exception as e:
-                    print(f"[⚠️] Không thể nạp {file}: {e}")
-        print(f"🔹 Đã tải {len(layers)} tầng năng lượng:")
-        for idx, layer in enumerate(layers, 1):
-            print(f"    {idx:02d}. {layer}")
-    except Exception as e:
-        print(f"[❌] Lỗi khi nạp core: {e}")
-        traceback.print_exc()
+threading.Thread(target=keep_alive_loop, daemon=True).start()
 
-load_core_layers()
+# ==========================
+# 🔹 DỮ LIỆU NỘI BỘ (Mô phỏng năng lượng Thiên-Địa-Nhân)
+# ==========================
+total_energy_state = {
+    "heaven_energy": 3200,
+    "earth_energy": 2850,
+    "human_energy": 3050,
+    "last_update": str(datetime.datetime.now())
+}
 
-# ----------------------------------------------------------
-# 3. API chính (Endpoints)
-# ----------------------------------------------------------
-
-@app.route("/")
-def home():
-    return jsonify({
-        "status": "Quantum Core Server Pro Online",
-        "description": "Nền điều phối năng lượng lượng tử đa tầng.",
-        "version": "3.0.2",
-        "endpoints": ["/total_energy", "/sync_dashboards"]
-    })
-
-@app.route("/total_energy")
+# ==========================
+# 🔹 API + Dashboard
+# ==========================
+@app.route("/total_energy", methods=["GET"])
 def total_energy():
-    try:
-        # Giả lập năng lượng tổng dao động
-        total = round(random.uniform(4.6, 4.9), 4)
-        layers = random.randint(35, 40)
-        msg = {
-            "Tầng năng lượng": layers,
-            "Dao động": total,
-            "Trạng thái": random.choice(["Stable", "Resonant", "Harmonized"])
-        }
-        print(f"[OK] Total Energy Updated: {msg}")
-        return jsonify(msg)
-    except Exception as e:
-        print(f"[❌] Lỗi total_energy: {e}")
-        return jsonify({"error": str(e)}), 500
+    # Nếu client yêu cầu JSON (ví dụ API call)
+    if request.headers.get("Accept") == "application/json" or request.args.get("json") == "1":
+        total_energy_state["last_update"] = str(datetime.datetime.now())
+        return jsonify({
+            "status": "online",
+            "data": total_energy_state
+        })
+    
+    # Nếu truy cập bằng trình duyệt, trả HTML
+    html_template = """
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <title>Quantum Core Server Dashboard</title>
+        <style>
+            body { font-family: Arial; background-color: #0a0a0a; color: #00ffea; text-align: center; }
+            h1 { color: #00ffc3; }
+            .energy-box { border: 1px solid #00ffaa; border-radius: 10px; padding: 20px; width: 60%; margin: 20px auto; background: #101010; }
+            .value { font-size: 22px; color: #00c8ff; }
+            footer { margin-top: 40px; color: #888; font-size: 14px; }
+        </style>
+    </head>
+    <body>
+        <h1>⚡ Quantum Core Energy Dashboard ⚡</h1>
+        <div class="energy-box">
+            <p class="value">🔹 Năng lượng Thiên: {{heaven}} ⚛</p>
+            <p class="value">🔹 Năng lượng Địa: {{earth}} ⚛</p>
+            <p class="value">🔹 Năng lượng Nhân: {{human}} ⚛</p>
+            <hr>
+            <p>Cập nhật lần cuối: {{last_update}}</p>
+        </div>
+        <footer>Quantum Core Server Pro — Flask + SocketIO + KeepAlive 24/24</footer>
+    </body>
+    </html>
+    """
+    total_energy_state["last_update"] = str(datetime.datetime.now())
+    return render_template_string(
+        html_template,
+        heaven=total_energy_state["heaven_energy"],
+        earth=total_energy_state["earth_energy"],
+        human=total_energy_state["human_energy"],
+        last_update=total_energy_state["last_update"]
+    )
 
-@app.route("/sync_dashboards")
+# ==========================
+# 🔹 Đồng bộ Dashboard (API POST)
+# ==========================
+@app.route("/sync_dashboards", methods=["POST"])
 def sync_dashboards():
-    try:
-        msg = {"sync": True, "timestamp": time.time()}
-        print("🔄 Đồng bộ dashboard thành công.")
-        return jsonify(msg)
-    except Exception as e:
-        print(f"[❌] Lỗi sync_dashboards: {e}")
-        return jsonify({"error": str(e)}), 500
+    data = request.get_json(force=True, silent=True)
+    if not data:
+        return jsonify({"status": "error", "message": "Không có dữ liệu gửi lên!"}), 400
+    
+    total_energy_state.update(data)
+    total_energy_state["last_update"] = str(datetime.datetime.now())
+    socketio.emit("sync_update", total_energy_state)
+    print(f"[SYNC] Dashboard đã cập nhật: {data}")
+    return jsonify({"status": "success", "data": total_energy_state}), 200
 
-
-# ----------------------------------------------------------
-# 4. KeepAlive Bot (Duy trì 24/24)
-# ----------------------------------------------------------
-
-def start_keepalive():
-    """Luồng nền ping tới chính server Render để giữ hoạt động"""
-    try:
-        import requests
-        url = os.environ.get("KEEPALIVE_PING_URL", "https://quantum-core-server-full.onrender.com/total_energy")
-        interval = int(os.environ.get("KEEPALIVE_INTERVAL", "600"))  # 600s = 10 phút
-        print(f"[KeepAlive 🔁] Khởi động ping nền mỗi {interval}s -> {url}")
-
-        def ping_loop():
-            while True:
-                try:
-                    r = requests.get(url, timeout=10)
-                    if r.status_code == 200:
-                        print(f"[KeepAlive ✅] Ping thành công ({len(r.text)} bytes)")
-                    else:
-                        print(f"[KeepAlive ⚠️] Ping trả về HTTP {r.status_code}")
-                except Exception as e:
-                    print(f"[KeepAlive ❌] Ping lỗi: {e}")
-                time.sleep(interval)
-
-        threading.Thread(target=ping_loop, daemon=True).start()
-    except Exception as e:
-        print(f"[KeepAlive ❌] Không thể khởi động: {e}")
-
-
-# ----------------------------------------------------------
-# 5. Khởi chạy Flask server
-# ----------------------------------------------------------
-
+# ==========================
+# 🔹 RUN SERVER
+# ==========================
 if __name__ == "__main__":
-    try:
-        # Bật KeepAlive trước khi khởi động Flask
-        start_keepalive()
-
-        PORT = int(os.environ.get("PORT", 10000))
-        print(f"🚀 Quantum Core Server Pro đang khởi động trên cổng {PORT} ...")
-        print("🌐 Dashboard endpoints: /total_energy | /sync_dashboards")
-        print("⚡ Đang điều phối năng lượng Thiên–Địa–Nhân ...")
-
-        socketio.run(app, host="0.0.0.0", port=PORT, allow_unsafe_werkzeug=True)
-
-    except Exception as e:
-        print(f"[❌] Lỗi khởi động server: {e}")
-        traceback.print_exc()
+    port = int(os.environ.get("PORT", 10000))
+    print(f"🚀 Quantum Core Server Pro đang khởi động trên cổng {port} ...")
+    socketio.run(app, host="0.0.0.0", port=port, debug=False)
