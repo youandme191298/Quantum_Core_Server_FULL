@@ -1,84 +1,83 @@
 # ============================================================
-# Quantum Core Server Pro (HTML + JSON + KeepAlive + SocketIO)
-# Build: Final Stable for Render (allow Werkzeug)
+# Quantum Core Server Pro (Render Compatible Edition)
+# Flask + SocketIO + KeepAlive 24/24 + Auto PORT Fix
 # ============================================================
 
 from flask import Flask, jsonify, render_template_string, request
 from flask_socketio import SocketIO
 import threading, time, requests, datetime, os
 
-# ========================================
-# 🔹 Khởi tạo ứng dụng Flask + SocketIO
-# ========================================
+# ===============================
+# 🔹 Khởi tạo ứng dụng Flask
+# ===============================
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# ========================================
-# 🔹 Cấu hình KEEPALIVE 24/24
-# ========================================
+# ===============================
+# 🔹 Cấu hình KeepAlive (ping Render)
+# ===============================
 KEEPALIVE_URL = "https://quantum-core-server-full.onrender.com/total_energy"
 
 def keep_alive_loop():
     while True:
         try:
-            r = requests.get(KEEPALIVE_URL, timeout=10)
-            print(f"[KeepAlive ✅] Ping Render {r.status_code} at {datetime.datetime.now()}")
+            res = requests.get(KEEPALIVE_URL, timeout=10)
+            print(f"[KeepAlive ✅] Ping Render {res.status_code} at {datetime.datetime.now()}")
         except Exception as e:
             print(f"[KeepAlive ⚠️] Error: {e}")
         time.sleep(600)  # Ping mỗi 10 phút
 
 threading.Thread(target=keep_alive_loop, daemon=True).start()
 
-# ========================================
-# 🔹 Bộ dữ liệu năng lượng mô phỏng
-# ========================================
+# ===============================
+# 🔹 Dữ liệu năng lượng mẫu
+# ===============================
 total_energy_state = {
-    "heaven_energy": 3200,
-    "earth_energy": 2850,
-    "human_energy": 3050,
+    "heaven_energy": 3210,
+    "earth_energy": 2875,
+    "human_energy": 3088,
     "last_update": str(datetime.datetime.now())
 }
 
-# ========================================
-# 🔹 Endpoint /total_energy (HTML + JSON)
-# ========================================
+# ===============================
+# 🔹 Endpoint /total_energy
+# ===============================
 @app.route("/total_energy", methods=["GET"])
 def total_energy():
     total_energy_state["last_update"] = str(datetime.datetime.now())
 
-    # Trả JSON nếu client yêu cầu hoặc query json=1
+    # JSON mode
     if request.headers.get("Accept") == "application/json" or request.args.get("json") == "1":
         return jsonify({
             "status": "online",
             "data": total_energy_state
         })
-    
-    # Giao diện Dashboard HTML
+
+    # HTML dashboard
     html_template = """
-    <!DOCTYPE html>
-    <html lang="vi">
-    <head>
-        <meta charset="UTF-8">
-        <title>Quantum Core Server Dashboard</title>
-        <style>
-            body { font-family: Arial; background-color: #0a0a0a; color: #00ffea; text-align: center; }
-            h1 { color: #00ffc3; }
-            .energy-box { border: 1px solid #00ffaa; border-radius: 10px; padding: 20px; width: 60%; margin: 20px auto; background: #101010; }
-            .value { font-size: 22px; color: #00c8ff; }
-            footer { margin-top: 40px; color: #888; font-size: 14px; }
-        </style>
-    </head>
-    <body>
-        <h1>⚡ Quantum Core Energy Dashboard ⚡</h1>
-        <div class="energy-box">
-            <p class="value">🔹 Năng lượng Thiên: {{heaven}} ⚛</p>
-            <p class="value">🔹 Năng lượng Địa: {{earth}} ⚛</p>
-            <p class="value">🔹 Năng lượng Nhân: {{human}} ⚛</p>
-            <hr>
-            <p>Cập nhật lần cuối: {{last_update}}</p>
-        </div>
-        <footer>Quantum Core Server Pro — Flask + SocketIO + KeepAlive 24/24</footer>
-    </body>
+    <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Quantum Core Dashboard</title>
+            <style>
+                body { background-color:#0a0a0a; color:#00ffea; text-align:center; font-family:Arial; }
+                h1 { color:#00ffc3; }
+                .box { border:1px solid #00ffaa; border-radius:10px; width:60%; margin:auto; padding:20px; background:#111; }
+                .val { font-size:22px; margin:10px; }
+                footer { margin-top:30px; color:#777; font-size:13px; }
+            </style>
+        </head>
+        <body>
+            <h1>⚡ Quantum Core Energy Dashboard ⚡</h1>
+            <div class="box">
+                <div class="val">🔹 Năng lượng Thiên: {{heaven}} ⚛</div>
+                <div class="val">🔹 Năng lượng Địa: {{earth}} ⚛</div>
+                <div class="val">🔹 Năng lượng Nhân: {{human}} ⚛</div>
+                <hr>
+                <div>Cập nhật: {{last_update}}</div>
+            </div>
+            <footer>Quantum Core Server Pro — Flask + SocketIO + KeepAlive 24/24</footer>
+        </body>
     </html>
     """
     return render_template_string(
@@ -89,9 +88,9 @@ def total_energy():
         last_update=total_energy_state["last_update"]
     )
 
-# ========================================
-# 🔹 Đồng bộ Dashboard qua API POST
-# ========================================
+# ===============================
+# 🔹 API đồng bộ Dashboard
+# ===============================
 @app.route("/sync_dashboards", methods=["POST"])
 def sync_dashboards():
     data = request.get_json(force=True, silent=True)
@@ -104,17 +103,23 @@ def sync_dashboards():
     print(f"[SYNC] Dashboard cập nhật: {data}")
     return jsonify({"status": "success", "data": total_energy_state}), 200
 
-# ========================================
+# ===============================
 # 🔹 Route test nhanh
-# ========================================
+# ===============================
 @app.route("/test")
 def test():
     return "✅ Quantum Core Server is running successfully on Render!"
 
-# ========================================
-# 🔹 Chạy server (cho Render)
-# ========================================
+# ===============================
+# 🔹 Chạy server (Render)
+# ===============================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     print(f"🚀 Quantum Core Server Pro đang khởi động trên cổng {port} ...")
-    socketio.run(app, host="0.0.0.0", port=port, debug=False, allow_unsafe_werkzeug=True)
+
+    # ⚠️ Render yêu cầu bật allow_unsafe_werkzeug=True
+    socketio.run(app,
+                 host="0.0.0.0",
+                 port=port,
+                 debug=False,
+                 allow_unsafe_werkzeug=True)
