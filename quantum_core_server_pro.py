@@ -1,7 +1,18 @@
 # ======================================================
-# Quantum Core Server Pro — FINAL RENDER PATCH
-# Fix Python 3.13 distutils removal + Eventlet stable
+# Quantum Core Server Pro — Ultimate Render Fix (Oct 2025)
+# Fix distutils removal on Python 3.12+ and Eventlet support
 # ======================================================
+
+import sys, types
+
+# --- TẠO MODULE distutils "ảo" nếu bị xóa ---
+if "distutils" not in sys.modules:
+    fake = types.ModuleType("distutils")
+    version = types.ModuleType("distutils.version")
+    version.LooseVersion = lambda x: (x,)
+    fake.version = version
+    sys.modules["distutils"] = fake
+    sys.modules["distutils.version"] = version
 
 import eventlet
 eventlet.monkey_patch()
