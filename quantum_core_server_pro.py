@@ -1,17 +1,17 @@
 # ======================================================
-# Quantum Core Server Pro (Render Final Stable Build)
-# Flask + SocketIO + KeepAlive + Auto Port Detection
+# Quantum Core Server Pro — Render Production Final (Stable)
+# Flask + SocketIO + KeepAlive + Auto PORT Binding
 # ======================================================
 
 from flask import Flask, jsonify, render_template_string, request
 from flask_socketio import SocketIO
-import threading, time, datetime, os
+import threading, time, datetime, os, requests
 
-# === Flask + SocketIO initialization ===
+# === Flask + SocketIO ===
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-# === Energy state ===
+# === Energy State ===
 total_energy = {
     "heaven": 3210,
     "earth": 2875,
@@ -19,22 +19,17 @@ total_energy = {
     "last_update": str(datetime.datetime.now())
 }
 
-# === KeepAlive (ping server every 10 minutes) ===
+# === KeepAlive Ping ===
 KEEPALIVE_URL = "https://quantum-core-server-full.onrender.com/total_energy"
 
 def keep_alive():
-    try:
-        import requests
-    except ImportError:
-        print("[KeepAlive ⚠️] requests module not installed — skipping ping loop.")
-        return
     while True:
         try:
             r = requests.get(KEEPALIVE_URL, timeout=10)
-            print(f"[KeepAlive ✅] Ping {KEEPALIVE_URL} → {r.status_code}")
+            print(f"[KeepAlive ✅] Ping → {r.status_code}")
         except Exception as e:
             print(f"[KeepAlive ⚠️] Ping error: {e}")
-        time.sleep(600)  # 10 minutes interval
+        time.sleep(600)
 
 threading.Thread(target=keep_alive, daemon=True).start()
 
@@ -44,13 +39,13 @@ HTML_TEMPLATE = """
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Quantum Core - Total Energy</title>
+<title>Quantum Core Dashboard</title>
 <style>
-  body { background-color:#020c14; color:#00fff0; font-family:Consolas,monospace; text-align:center; }
-  h1 { color:#00ffe1; margin-top:40px; }
-  .panel { margin:auto; width:60%; padding:20px; border:2px solid #00ffe1; border-radius:15px; background:#06141c; }
-  .v { font-size:20px; margin:10px 0; }
-  footer { margin-top:20px; font-size:12px; color:#80cfcf; }
+  body { background-color:#000; color:#00fff2; font-family:Consolas,monospace; text-align:center; }
+  h1 { color:#00ffee; margin-top:40px; }
+  .panel { width:60%; margin:auto; padding:20px; border:2px solid #00ffee; border-radius:10px; background:#00141a; }
+  .v { margin:10px 0; font-size:18px; }
+  footer { margin-top:20px; font-size:12px; color:#aee; }
 </style>
 </head>
 <body>
@@ -60,9 +55,9 @@ HTML_TEMPLATE = """
     <div class="v">Địa khí: <b>{{e}}</b></div>
     <div class="v">Nhân khí: <b>{{n}}</b></div>
     <hr/>
-    <div>Cập nhật: {{t}}</div>
+    <div class="v">Cập nhật: {{t}}</div>
   </div>
-  <footer>API JSON: /total_energy?json=1 | Sync endpoint: /sync_dashboards</footer>
+  <footer>API: /total_energy?json=1 | Sync: /sync_dashboards</footer>
 </body>
 </html>
 """
@@ -70,13 +65,13 @@ HTML_TEMPLATE = """
 # === Routes ===
 @app.route("/")
 def index():
-    return "✅ Quantum Core Server Pro đang hoạt động! Dùng /total_energy để xem dashboard."
+    return jsonify({"status": "ok", "message": "Quantum Core Server đang hoạt động"})
 
 @app.route("/total_energy", methods=["GET"])
-def total_energy_dashboard():
+def dashboard():
     total_energy["last_update"] = str(datetime.datetime.now())
     if request.args.get("json") == "1":
-        return jsonify({"status":"ok", "data":total_energy})
+        return jsonify({"status": "ok", "data": total_energy})
     return render_template_string(
         HTML_TEMPLATE,
         h=total_energy["heaven"],
@@ -87,34 +82,29 @@ def total_energy_dashboard():
 
 @app.route("/sync_dashboards", methods=["POST"])
 def sync_dashboards():
-    data = request.get_json(silent=True, force=True)
+    data = request.get_json(force=True, silent=True)
     if not data:
-        return jsonify({"status":"error", "message":"No data received"}), 400
+        return jsonify({"status":"error","message":"Không nhận được dữ liệu"}),400
     total_energy.update(data)
     total_energy["last_update"] = str(datetime.datetime.now())
     socketio.emit("sync_update", total_energy)
-    print(f"[SYNC] Dashboard updated: {data}")
-    return jsonify({"status":"ok", "data":total_energy}), 200
+    print("[SYNC] Cập nhật năng lượng:", data)
+    return jsonify({"status":"ok","data":total_energy}),200
 
 @app.route("/test")
-def test_route():
-    return jsonify({"status":"running", "time":str(datetime.datetime.now())})
+def test():
+    return jsonify({"status": "running", "time": str(datetime.datetime.now())})
 
-# === SocketIO Events ===
+# === SocketIO ===
 @socketio.on("connect")
 def handle_connect():
     print("[SocketIO] Client connected")
     socketio.emit("sync_update", total_energy)
 
-@socketio.on("ping_server")
-def handle_ping(msg=None):
-    print(f"[SocketIO] Ping from client: {msg}")
-    socketio.emit("pong", {"time": str(datetime.datetime.now())})
-
-# === Run server (Render-safe, auto PORT) ===
+# === Auto Port Binding (Render-safe) ===
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))  # Render auto-assigns this
-    print(f"🚀 Quantum Core Server Pro running on Render port {port}")
+    port = int(os.environ.get("PORT", 10000))
+    print(f"🚀 Quantum Core Server Pro khởi động trên cổng {port}")
     socketio.run(
         app,
         host="0.0.0.0",
