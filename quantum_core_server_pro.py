@@ -1,7 +1,10 @@
 # ======================================================
-# Quantum Core Server Pro — FINAL PRODUCTION (Eventlet)
-# Flask + SocketIO (eventlet) + KeepAlive + Auto URL + PORT
+# Quantum Core Server Pro — FINAL FIX FOR RENDER
+# Force Eventlet async mode (Flask-SocketIO)
 # ======================================================
+
+import eventlet
+eventlet.monkey_patch()  # <— ép Render load eventlet trước Flask
 
 from flask import Flask, jsonify, render_template_string, request
 from flask_socketio import SocketIO
