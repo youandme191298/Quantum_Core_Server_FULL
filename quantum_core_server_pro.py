@@ -107,4 +107,9 @@ def create_app():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
+    print(f"\n🚀 Quantum Core Server Pro (Threading) khởi động trên cổng {port}")
+    print("🌐 Render external URL:", RENDER_URL)
+    print("🔁 KeepAlive URL:", KEEPALIVE_URL)
     socketio.run(app, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
+else:
+    print("✅ Quantum Core Server loaded by Gunicorn (production mode)")
