@@ -3,7 +3,10 @@ services:
     name: Quantum_Core_Server_FULL
     env: python
     plan: free
-    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
+    buildCommand: |
+      apt-get update && apt-get install -y python3-distutils
+      pip install --upgrade pip
+      pip install -r requirements.txt
     startCommand: "gunicorn -k eventlet -w 1 -b 0.0.0.0:$PORT quantum_core_server_pro:app"
     envVars:
       - key: PYTHON_VERSION
