@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: quantum-core-server
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python quantum_core_server_pro.py"
+    envVars:
+      - key: PYTHONUTF8
+        value: "1"

@@ -1,0 +1,2 @@
+run = "python3 quantum_core_server_pro.py"
+language = "python3"
